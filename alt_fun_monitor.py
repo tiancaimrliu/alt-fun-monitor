@@ -353,7 +353,7 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
     lines = [
         f"<b>{title}</b>",
         f"LT: <code>{html_value(details['lt'])}</code>",
-        f"Leverage target: <b>{html_value(details.get('underlying'))} {html_value(leverage)}x {html_value(side.lower())}</b>",
+        f"Underlying: <b>{html_value(details.get('underlying'))}</b>",
         f"Name/Symbol: <b>{html_value(details.get('name'))} / {html_value(details.get('symbol'))}</b>",
         f"Side/Leverage: <b>{html_value(side)} {html_value(leverage)}x</b>",
         f"Decimals/Supply: <b>{html_value(details.get('decimals'))} / {html_value(total_supply)}</b>",
