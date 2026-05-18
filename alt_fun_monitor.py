@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import time
+from html import escape
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -33,6 +34,8 @@ LOG_BACKUP_COUNT = int(os.getenv("LOG_BACKUP_COUNT", "3"))
 FACTORY_ADDRESS = Web3.to_checksum_address(
     os.getenv("FACTORY_ADDRESS", "0x65a379FE76C7AdC8037b3522De62B27c0D4e9259")
 )
+
+SPCX_KEYWORDS = ["SPCX", "SPACEX", "SPACE X", "XYZ100", "XYZ"]
 
 FACTORY_ABI = [
     {
@@ -321,33 +324,63 @@ def format_token_supply(value, decimals):
         return str(value)
 
 
+def html_value(value):
+    if value is None or value == "":
+        return "UNKNOWN"
+    return escape(str(value), quote=False)
+
+
+def is_spcx_related(details):
+    if not details:
+        return False
+
+    underlying_token = details.get("underlying_token") or {}
+    check_text = " ".join(
+        [
+            str(details.get("name") or ""),
+            str(details.get("symbol") or ""),
+            str(details.get("underlying") or ""),
+            str(underlying_token.get("symbol") or ""),
+            str(underlying_token.get("name") or ""),
+        ]
+    ).upper()
+    return any(keyword in check_text for keyword in SPCX_KEYWORDS)
+
+
 def build_telegram_message(details, block_number, tx_hash_text, now):
+    is_spcx = is_spcx_related(details)
+    title = (
+        "SPCX / SpaceX important new Underlying"
+        if is_spcx
+        else "alt.fun new LT detected"
+    )
     side = format_side(details.get("is_long"))
     leverage = details.get("leverage", "UNKNOWN")
     total_supply = format_token_supply(details.get("total_supply"), details.get("decimals"))
     underlying_token = details.get("underlying_token") or {}
 
     lines = [
-        "<b>alt.fun new LT detected</b>",
-        f"LT: <code>{details['lt']}</code>",
-        f"Name/Symbol: <b>{details.get('name') or 'UNKNOWN'} / {details.get('symbol') or 'UNKNOWN'}</b>",
-        f"Underlying: <b>{details.get('underlying') or 'UNKNOWN'}</b>",
-        f"Side/Leverage: <b>{side} {leverage}x</b>",
-        f"Decimals/Supply: <b>{details.get('decimals') if details.get('decimals') is not None else 'UNKNOWN'} / {total_supply}</b>",
+        f"<b>{title}</b>",
+        f"LT: <code>{html_value(details['lt'])}</code>",
+        f"Name/Symbol: <b>{html_value(details.get('name'))} / {html_value(details.get('symbol'))}</b>",
+        f"Underlying: <b>{html_value(details.get('underlying'))}</b>",
+        f"Side/Leverage: <b>{html_value(side)} {html_value(leverage)}x</b>",
+        f"Decimals/Supply: <b>{html_value(details.get('decimals'))} / {html_value(total_supply)}</b>",
     ]
 
     if underlying_token:
         lines.append(
             "Underlying token: "
-            f"<b>{underlying_token.get('symbol') or 'UNKNOWN'} / {underlying_token.get('name') or 'UNKNOWN'}</b>"
+            f"<b>{html_value(underlying_token.get('symbol'))} / {html_value(underlying_token.get('name'))}</b>"
         )
-        lines.append(f"Underlying token addr: <code>{underlying_token.get('address')}</code>")
+        lines.append(f"Underlying token addr: <code>{html_value(underlying_token.get('address'))}</code>")
 
     lines.extend(
         [
-            f"Block: <code>{block_number}</code>",
-            f"Tx: <code>{tx_hash_text}</code>",
-            f"Time: {now}",
+            f"Priority: <b>{'SPCX_WATCH' if is_spcx else 'NORMAL'}</b>",
+            f"Block: <code>{html_value(block_number)}</code>",
+            f"Tx: <code>{html_value(tx_hash_text)}</code>",
+            f"Time: {html_value(now)}",
         ]
     )
     return "\n".join(lines)
