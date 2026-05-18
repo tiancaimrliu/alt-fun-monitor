@@ -354,7 +354,7 @@ def should_notify_leverage_target(details):
 
 def build_telegram_message(details, block_number, tx_hash_text, now):
     is_watch = is_watch_leverage_target(details)
-    title = "🔥🚀【Watch Underlying New Leverage Target】" if is_watch else "alt.fun new leverage target"
+    title = "🔥🚀【alt.fun 重点标的出现】" if is_watch else "alt.fun 新杠杆标的"
     side = format_side(details.get("is_long"))
     leverage = details.get("leverage", "UNKNOWN")
     total_supply = format_token_supply(details.get("total_supply"), details.get("decimals"))
@@ -362,26 +362,27 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
 
     lines = [
         f"<b>{title}</b>",
-        f"LT: <code>{html_value(details['lt'])}</code>",
-        f"Underlying: <b>{html_value(details.get('underlying'))}</b>",
-        f"Name/Symbol: <b>{html_value(details.get('name'))} / {html_value(details.get('symbol'))}</b>",
-        f"Side/Leverage: <b>{html_value(side)} {html_value(leverage)}x</b>",
-        f"Decimals/Supply: <b>{html_value(details.get('decimals'))} / {html_value(total_supply)}</b>",
+        f"底层 Underlying: <b>{html_value(details.get('underlying'))}</b>",
+        f"标的名称: <b>{html_value(details.get('name'))}</b>",
+        f"标的符号: <b>{html_value(details.get('symbol'))}</b>",
+        f"方向/倍数: <b>{html_value(side)} {html_value(leverage)}x</b>",
+        f"LT 地址: <code>{html_value(details['lt'])}</code>",
+        f"精度/供应量: <b>{html_value(details.get('decimals'))} / {html_value(total_supply)}</b>",
     ]
 
     if underlying_token:
         lines.append(
-            "Underlying token: "
+            "底层代币: "
             f"<b>{html_value(underlying_token.get('symbol'))} / {html_value(underlying_token.get('name'))}</b>"
         )
-        lines.append(f"Underlying token addr: <code>{html_value(underlying_token.get('address'))}</code>")
+        lines.append(f"底层代币地址: <code>{html_value(underlying_token.get('address'))}</code>")
 
     lines.extend(
         [
-            "Priority: <b>WATCH_UNDERLYING</b>" if is_watch else "Priority: <b>NORMAL</b>",
-            f"Block: <code>{html_value(block_number)}</code>",
-            f"Tx: <code>{html_value(tx_hash_text)}</code>",
-            f"Time: {html_value(now)}",
+            "优先级: <b>重点监控</b>" if is_watch else "优先级: <b>普通</b>",
+            f"区块: <code>{html_value(block_number)}</code>",
+            f"交易: <code>{html_value(tx_hash_text)}</code>",
+            f"时间: {html_value(now)}",
         ]
     )
     return "\n".join(lines)
