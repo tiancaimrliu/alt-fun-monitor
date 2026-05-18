@@ -35,7 +35,7 @@ FACTORY_ADDRESS = Web3.to_checksum_address(
     os.getenv("FACTORY_ADDRESS", "0x65a379FE76C7AdC8037b3522De62B27c0D4e9259")
 )
 
-SPCX_KEYWORDS = ["SPCX", "SPACEX", "SPACE X"]
+WATCH_UNDERLYING_KEYWORDS = ["ASTEROID", "SPCX"]
 
 FACTORY_ABI = [
     {
@@ -330,21 +330,21 @@ def html_value(value):
     return escape(str(value), quote=False)
 
 
-def is_spcx_related(details):
+def is_watch_underlying(details):
     if not details:
         return False
 
     underlying = str(details.get("underlying") or "").upper()
-    return any(keyword in underlying for keyword in SPCX_KEYWORDS)
+    return any(keyword in underlying for keyword in WATCH_UNDERLYING_KEYWORDS)
 
 
 def should_notify_leverage_target(details):
-    return is_spcx_related(details)
+    return is_watch_underlying(details)
 
 
 def build_telegram_message(details, block_number, tx_hash_text, now):
-    is_spcx = is_spcx_related(details)
-    title = "🔥🚀【SPCX / SpaceX New Leverage Target】" if is_spcx else "alt.fun new leverage target"
+    is_watch = is_watch_underlying(details)
+    title = "🔥🚀【Watch Underlying New Leverage Target】" if is_watch else "alt.fun new leverage target"
     side = format_side(details.get("is_long"))
     leverage = details.get("leverage", "UNKNOWN")
     total_supply = format_token_supply(details.get("total_supply"), details.get("decimals"))
@@ -368,7 +368,7 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
 
     lines.extend(
         [
-            "Priority: <b>SPCX_WATCH</b>" if is_spcx else "Priority: <b>NORMAL</b>",
+            "Priority: <b>WATCH_UNDERLYING</b>" if is_watch else "Priority: <b>NORMAL</b>",
             f"Block: <code>{html_value(block_number)}</code>",
             f"Tx: <code>{html_value(tx_hash_text)}</code>",
             f"Time: {html_value(now)}",
@@ -378,8 +378,8 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
 
 
 def log_lt_details(details, block_number, tx_hash_text, now):
-    is_spcx = is_spcx_related(details)
-    spcx_tag = "【SPCX】" if is_spcx else ""
+    is_watch = is_watch_underlying(details)
+    spcx_tag = "【WATCH】" if is_watch else ""
     side = format_side(details.get("is_long"))
     logger.info("New LT detected %s at %s", spcx_tag, now)
     logger.info("  LT: %s", details["lt"])
@@ -490,7 +490,7 @@ def run_forever():
     last_scanned_block = get_start_block(state, latest_block)
     save_state(last_scanned_block)
 
-    logger.info("alt.fun BounceTech monitor started (SPCX highlight enabled)")
+    logger.info("alt.fun BounceTech monitor started (watch underlying enabled)")
     logger.info("Factory: %s", FACTORY_ADDRESS)
     logger.info("Poll interval: %ss", CHECK_INTERVAL)
     logger.info("Starting after block: %s", last_scanned_block)
