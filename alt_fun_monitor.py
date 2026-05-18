@@ -373,11 +373,17 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
     total_supply = format_token_supply(details.get("total_supply"), details.get("decimals"))
     underlying_token = details.get("underlying_token") or {}
     token_url = build_alt_fun_token_url(details.get("lt"))
+    name_text = html_value(details.get("name"))
+    name_link = (
+        f'<a href="{html_attr(token_url)}">{name_text}</a>'
+        if token_url
+        else name_text
+    )
 
     lines = [
         f"<b>{title}</b>",
         f"底层 Underlying: <b>{html_value(details.get('underlying'))}</b>",
-        f"标的名称: <b>{html_value(details.get('name'))}</b>",
+        f"标的名称: <b>{name_link}</b>",
         f"标的符号: <b>{html_value(details.get('symbol'))}</b>",
         f"方向/倍数: <b>{html_value(side)} {html_value(leverage)}x</b>",
         f"LT 地址: <code>{html_value(details['lt'])}</code>",
@@ -394,7 +400,6 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
     lines.extend(
         [
             "优先级: <b>重点监控</b>" if is_watch else "优先级: <b>普通</b>",
-            f'币种链接: <a href="{html_attr(token_url)}">打开 alt.fun</a>' if token_url else "币种链接: UNKNOWN",
             f"区块: <code>{html_value(block_number)}</code>",
             f"交易: <code>{html_value(tx_hash_text)}</code>",
             f"时间: {html_value(now)}",
