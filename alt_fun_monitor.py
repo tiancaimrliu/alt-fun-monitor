@@ -19,7 +19,7 @@ DEFAULT_ENV_PATH = (
 
 ENV_PATH = Path(os.getenv("ALT_FUN_ENV_PATH", DEFAULT_ENV_PATH))
 RPC_HTTP_URL = os.getenv("RPC_HTTP_URL", os.getenv("RPC_URL", "https://rpc.hyperliquid.xyz/evm"))
-EXPLORER_TX_BASE = os.getenv("EXPLORER_TX_BASE", "https://hyperevmscan.io/tx/")
+ALT_FUN_TOKEN_BASE = os.getenv("ALT_FUN_TOKEN_BASE", "https://alt.fun/token/")
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "10"))
 HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT", "20"))
 MAX_LOG_BLOCK_RANGE = int(os.getenv("MAX_LOG_BLOCK_RANGE", "50"))
@@ -336,11 +336,11 @@ def html_attr(value):
     return escape(str(value), quote=True)
 
 
-def build_tx_url(tx_hash_text):
-    tx_hash = str(tx_hash_text or "").strip()
-    if not tx_hash or tx_hash == "UNKNOWN":
+def build_alt_fun_token_url(lt_address):
+    address = str(lt_address or "").strip()
+    if not address or address == "UNKNOWN":
         return None
-    return f"{EXPLORER_TX_BASE.rstrip('/')}/{tx_hash}"
+    return f"{ALT_FUN_TOKEN_BASE.rstrip('/')}/{address}"
 
 
 def is_watch_leverage_target(details):
@@ -371,7 +371,7 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
     leverage = details.get("leverage", "UNKNOWN")
     total_supply = format_token_supply(details.get("total_supply"), details.get("decimals"))
     underlying_token = details.get("underlying_token") or {}
-    tx_url = build_tx_url(tx_hash_text)
+    token_url = build_alt_fun_token_url(details.get("lt"))
 
     lines = [
         f"<b>{title}</b>",
@@ -393,9 +393,9 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
     lines.extend(
         [
             "优先级: <b>重点监控</b>" if is_watch else "优先级: <b>普通</b>",
+            f'币种链接: <a href="{html_attr(token_url)}">打开 alt.fun</a>' if token_url else "币种链接: UNKNOWN",
             f"区块: <code>{html_value(block_number)}</code>",
             f"交易: <code>{html_value(tx_hash_text)}</code>",
-            f'交易链接: <a href="{html_attr(tx_url)}">打开 HyperEVMScan</a>' if tx_url else "交易链接: UNKNOWN",
             f"时间: {html_value(now)}",
         ]
     )
