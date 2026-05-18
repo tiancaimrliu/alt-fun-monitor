@@ -35,7 +35,8 @@ FACTORY_ADDRESS = Web3.to_checksum_address(
     os.getenv("FACTORY_ADDRESS", "0x65a379FE76C7AdC8037b3522De62B27c0D4e9259")
 )
 
-WATCH_UNDERLYINGS = {"ASTEROID", "SPCX"}
+WATCH_UNDERLYING = "SPCX"
+WATCH_ALTCOIN_NAMES = {"ASTEROID", "SPCX"}
 
 FACTORY_ABI = [
     {
@@ -330,20 +331,29 @@ def html_value(value):
     return escape(str(value), quote=False)
 
 
-def is_watch_underlying(details):
+def is_watch_leverage_target(details):
     if not details:
         return False
 
     underlying = str(details.get("underlying") or "").strip().upper()
-    return underlying in WATCH_UNDERLYINGS
+    if underlying != WATCH_UNDERLYING:
+        return False
+
+    altcoin_text = " ".join(
+        [
+            str(details.get("name") or ""),
+            str(details.get("symbol") or ""),
+        ]
+    ).upper()
+    return any(name in altcoin_text for name in WATCH_ALTCOIN_NAMES)
 
 
 def should_notify_leverage_target(details):
-    return is_watch_underlying(details)
+    return is_watch_leverage_target(details)
 
 
 def build_telegram_message(details, block_number, tx_hash_text, now):
-    is_watch = is_watch_underlying(details)
+    is_watch = is_watch_leverage_target(details)
     title = "🔥🚀【Watch Underlying New Leverage Target】" if is_watch else "alt.fun new leverage target"
     side = format_side(details.get("is_long"))
     leverage = details.get("leverage", "UNKNOWN")
@@ -378,7 +388,7 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
 
 
 def log_lt_details(details, block_number, tx_hash_text, now):
-    is_watch = is_watch_underlying(details)
+    is_watch = is_watch_leverage_target(details)
     spcx_tag = "【WATCH】" if is_watch else ""
     side = format_side(details.get("is_long"))
     logger.info("New LT detected %s at %s", spcx_tag, now)
