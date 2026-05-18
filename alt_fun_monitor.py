@@ -36,23 +36,6 @@ FACTORY_ADDRESS = Web3.to_checksum_address(
 )
 
 SPCX_KEYWORDS = ["SPCX", "SPACEX", "SPACE X"]
-COMMON_UNDERLYING_KEYWORDS = {
-    "HYPE",
-    "ETH",
-    "BTC",
-    "SOL",
-    "DOGE",
-    "ZEC",
-    "KPEPE",
-    "CL",
-    "BRENTOIL",
-    "GOLD",
-    "SILVER",
-    "NVDA",
-    "SP500",
-    "XYZ100",
-    "XYZ",
-}
 
 FACTORY_ABI = [
     {
@@ -364,29 +347,13 @@ def is_spcx_related(details):
     return any(keyword in check_text for keyword in SPCX_KEYWORDS)
 
 
-def is_really_new_underlying(details):
-    if not details:
-        return False
-
-    if is_spcx_related(details):
-        return True
-
-    underlying_token = details.get("underlying_token") or {}
-    check_text = " ".join(
-        [
-            str(details.get("name") or ""),
-            str(details.get("symbol") or ""),
-            str(details.get("underlying") or ""),
-            str(underlying_token.get("symbol") or ""),
-            str(underlying_token.get("name") or ""),
-        ]
-    ).upper()
-    return not any(keyword in check_text for keyword in COMMON_UNDERLYING_KEYWORDS)
+def should_notify_leverage_target(details):
+    return is_spcx_related(details)
 
 
 def build_telegram_message(details, block_number, tx_hash_text, now):
     is_spcx = is_spcx_related(details)
-    title = "🔥🚀【SPCX / SpaceX 重磅新 Underlying】" if is_spcx else "🚨 alt.fun 新 LT 检测到"
+    title = "🔥🚀【SPCX / SpaceX New Leverage Target】" if is_spcx else "alt.fun new leverage target"
     side = format_side(details.get("is_long"))
     leverage = details.get("leverage", "UNKNOWN")
     total_supply = format_token_supply(details.get("total_supply"), details.get("decimals"))
@@ -395,8 +362,8 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
     lines = [
         f"<b>{title}</b>",
         f"LT: <code>{html_value(details['lt'])}</code>",
+        f"Leverage target: <b>{html_value(details.get('underlying'))} {html_value(leverage)}x {html_value(side.lower())}</b>",
         f"Name/Symbol: <b>{html_value(details.get('name'))} / {html_value(details.get('symbol'))}</b>",
-        f"Underlying: <b>{html_value(details.get('underlying'))}</b>",
         f"Side/Leverage: <b>{html_value(side)} {html_value(leverage)}x</b>",
         f"Decimals/Supply: <b>{html_value(details.get('decimals'))} / {html_value(total_supply)}</b>",
     ]
@@ -410,7 +377,7 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
 
     lines.extend(
         [
-            f"Priority: <b>{'SPCX_WATCH' if is_spcx else 'NORMAL'}</b>",
+            "Priority: <b>SPCX_WATCH</b>" if is_spcx else "Priority: <b>NORMAL</b>",
             f"Block: <code>{html_value(block_number)}</code>",
             f"Tx: <code>{html_value(tx_hash_text)}</code>",
             f"Time: {html_value(now)}",
@@ -459,9 +426,9 @@ def handle_log(w3, factory, log, last_scanned_block):
         tx_hash_text = tx_hash.hex() if tx_hash else "UNKNOWN"
         details = fetch_lt_details(w3, lt_address, args)
 
-        if not is_really_new_underlying(details):
+        if not should_notify_leverage_target(details):
             logger.info(
-                "Detected LT but underlying appears common; skipping notification. lt=%s, underlying=%s, name=%s, symbol=%s",
+                "Detected leverage target but not in watch keywords; skipping notification. lt=%s, underlying=%s, name=%s, symbol=%s",
                 lt_address,
                 details.get("underlying"),
                 details.get("name"),
