@@ -23,6 +23,7 @@ ALT_FUN_TOKEN_BASE = os.getenv("ALT_FUN_TOKEN_BASE", "https://alt.fun/token/")
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "5"))
 HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT", "20"))
 MAX_LOG_BLOCK_RANGE = int(os.getenv("MAX_LOG_BLOCK_RANGE", "50"))
+MAX_CATCH_UP_BLOCKS = int(os.getenv("MAX_CATCH_UP_BLOCKS", "500"))
 BACKFILL_BLOCKS = int(os.getenv("BACKFILL_BLOCKS", "0"))
 RECONNECT_DELAY = int(os.getenv("RECONNECT_DELAY", "5"))
 STATUS_INTERVAL = int(os.getenv("STATUS_INTERVAL", "60"))
@@ -492,6 +493,21 @@ def get_start_block(state, latest_block):
     return max(0, latest_block - BACKFILL_BLOCKS)
 
 
+def clamp_catch_up_window(last_scanned_block, latest_block):
+    lag = latest_block - last_scanned_block
+    if lag <= MAX_CATCH_UP_BLOCKS:
+        return last_scanned_block
+
+    new_start = latest_block
+    logger.warning(
+        "Scanner is %s blocks behind; skipping old backlog and resuming at latest block %s",
+        lag,
+        new_start,
+    )
+    save_state(new_start)
+    return new_start
+
+
 def run_forever():
     setup_logging()
     load_env_file(ENV_PATH)
@@ -528,6 +544,7 @@ def run_forever():
     while True:
         try:
             latest_block = w3.eth.block_number
+            last_scanned_block = clamp_catch_up_window(last_scanned_block, latest_block)
             from_block = last_scanned_block + 1
 
             if from_block <= latest_block:
@@ -557,4 +574,12 @@ def run_forever():
 
 
 if __name__ == "__main__":
-    run_forever()
+    while True:
+        try:
+            run_forever()
+        except KeyboardInterrupt:
+            raise
+        except Exception as exc:
+            setup_logging()
+            logger.warning("Fatal monitor error: %s. Restarting in %ss...", exc, RECONNECT_DELAY)
+            time.sleep(RECONNECT_DELAY)
