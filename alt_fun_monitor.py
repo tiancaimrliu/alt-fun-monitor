@@ -27,6 +27,8 @@ MAX_CATCH_UP_BLOCKS = int(os.getenv("MAX_CATCH_UP_BLOCKS", "500"))
 BACKFILL_BLOCKS = int(os.getenv("BACKFILL_BLOCKS", "0"))
 RECONNECT_DELAY = int(os.getenv("RECONNECT_DELAY", "5"))
 STATUS_INTERVAL = int(os.getenv("STATUS_INTERVAL", "60"))
+TELEGRAM_HEARTBEAT_INTERVAL = int(os.getenv("TELEGRAM_HEARTBEAT_INTERVAL", "3600"))
+TELEGRAM_HEARTBEAT_MESSAGE = os.getenv("TELEGRAM_HEARTBEAT_MESSAGE", "草泥马赢我")
 
 STATE_PATH = Path(os.getenv("STATE_PATH", "alt_fun_monitor_state.json"))
 LOG_PATH = Path(os.getenv("LOG_PATH", "alt_fun_monitor.log"))
@@ -144,6 +146,21 @@ def send_telegram(message):
         response.raise_for_status()
     except Exception as exc:
         logger.warning("Telegram send failed: %s", exc)
+
+
+def send_telegram_heartbeat(latest_block=None, last_scanned_block=None):
+    lines = [html_value(TELEGRAM_HEARTBEAT_MESSAGE)]
+
+    if latest_block is not None and last_scanned_block is not None:
+        lines.extend(
+            [
+                f"最新区块: <code>{html_value(latest_block)}</code>",
+                f"已扫描: <code>{html_value(last_scanned_block)}</code>",
+                f"时间: {html_value(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))}",
+            ]
+        )
+
+    send_telegram("\n".join(lines))
 
 
 def load_state():
@@ -545,6 +562,8 @@ def run_forever():
     logger.info("State file: %s", STATE_PATH.resolve())
 
     last_status_ts = time.monotonic()
+    last_telegram_heartbeat_ts = time.monotonic()
+    send_telegram_heartbeat(latest_block, last_scanned_block)
 
     while True:
         try:
@@ -566,6 +585,10 @@ def run_forever():
                     len(known_lts),
                 )
                 last_status_ts = now
+
+            if now - last_telegram_heartbeat_ts >= TELEGRAM_HEARTBEAT_INTERVAL:
+                send_telegram_heartbeat(latest_block, last_scanned_block)
+                last_telegram_heartbeat_ts = now
 
             time.sleep(CHECK_INTERVAL)
         except KeyboardInterrupt:
