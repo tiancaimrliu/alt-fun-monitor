@@ -349,11 +349,7 @@ def is_spcx_related(details):
 
 def build_telegram_message(details, block_number, tx_hash_text, now):
     is_spcx = is_spcx_related(details)
-    title = (
-        "SPCX / SpaceX important new Underlying"
-        if is_spcx
-        else "alt.fun new LT detected"
-    )
+    title = "🔥🚀【SPCX / SpaceX 重磅新 Underlying】" if is_spcx else "🚨 alt.fun 新 LT 检测到"
     side = format_side(details.get("is_long"))
     leverage = details.get("leverage", "UNKNOWN")
     total_supply = format_token_supply(details.get("total_supply"), details.get("decimals"))
@@ -387,8 +383,10 @@ def build_telegram_message(details, block_number, tx_hash_text, now):
 
 
 def log_lt_details(details, block_number, tx_hash_text, now):
+    is_spcx = is_spcx_related(details)
+    spcx_tag = "【SPCX】" if is_spcx else ""
     side = format_side(details.get("is_long"))
-    logger.info("New LT detected at %s", now)
+    logger.info("New LT detected %s at %s", spcx_tag, now)
     logger.info("  LT: %s", details["lt"])
     logger.info("  Name/Symbol: %s / %s", details.get("name"), details.get("symbol"))
     logger.info("  Underlying: %s", details.get("underlying"))
@@ -486,7 +484,7 @@ def run_forever():
     last_scanned_block = get_start_block(state, latest_block)
     save_state(last_scanned_block)
 
-    logger.info("alt.fun BounceTech monitor started")
+    logger.info("alt.fun BounceTech monitor started (SPCX highlight enabled)")
     logger.info("Factory: %s", FACTORY_ADDRESS)
     logger.info("Poll interval: %ss", CHECK_INTERVAL)
     logger.info("Starting after block: %s", last_scanned_block)
