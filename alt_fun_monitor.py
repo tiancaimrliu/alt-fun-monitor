@@ -36,6 +36,22 @@ FACTORY_ADDRESS = Web3.to_checksum_address(
 )
 
 SPCX_KEYWORDS = ["SPCX", "SPACEX", "SPACE X", "XYZ100", "XYZ"]
+COMMON_UNDERLYING_KEYWORDS = {
+    "HYPE",
+    "ETH",
+    "BTC",
+    "SOL",
+    "DOGE",
+    "ZEC",
+    "KPEPE",
+    "CL",
+    "BRENTOIL",
+    "GOLD",
+    "SILVER",
+    "NVDA",
+    "SP500",
+    "XYZ100",
+}
 
 FACTORY_ABI = [
     {
@@ -347,6 +363,26 @@ def is_spcx_related(details):
     return any(keyword in check_text for keyword in SPCX_KEYWORDS)
 
 
+def is_really_new_underlying(details):
+    if not details:
+        return False
+
+    if is_spcx_related(details):
+        return True
+
+    underlying_token = details.get("underlying_token") or {}
+    check_text = " ".join(
+        [
+            str(details.get("name") or ""),
+            str(details.get("symbol") or ""),
+            str(details.get("underlying") or ""),
+            str(underlying_token.get("symbol") or ""),
+            str(underlying_token.get("name") or ""),
+        ]
+    ).upper()
+    return not any(keyword in check_text for keyword in COMMON_UNDERLYING_KEYWORDS)
+
+
 def build_telegram_message(details, block_number, tx_hash_text, now):
     is_spcx = is_spcx_related(details)
     title = "🔥🚀【SPCX / SpaceX 重磅新 Underlying】" if is_spcx else "🚨 alt.fun 新 LT 检测到"
@@ -421,6 +457,17 @@ def handle_log(w3, factory, log, last_scanned_block):
         tx_hash = log.get("transactionHash")
         tx_hash_text = tx_hash.hex() if tx_hash else "UNKNOWN"
         details = fetch_lt_details(w3, lt_address, args)
+
+        if not is_really_new_underlying(details):
+            logger.info(
+                "Detected LT but underlying appears common; skipping notification. lt=%s, underlying=%s, name=%s, symbol=%s",
+                lt_address,
+                details.get("underlying"),
+                details.get("name"),
+                details.get("symbol"),
+            )
+            save_state(last_scanned_block)
+            return
 
         log_lt_details(details, block_number, tx_hash_text, now)
         send_telegram(build_telegram_message(details, block_number, tx_hash_text, now))
