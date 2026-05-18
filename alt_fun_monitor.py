@@ -334,17 +334,8 @@ def is_spcx_related(details):
     if not details:
         return False
 
-    underlying_token = details.get("underlying_token") or {}
-    check_text = " ".join(
-        [
-            str(details.get("name") or ""),
-            str(details.get("symbol") or ""),
-            str(details.get("underlying") or ""),
-            str(underlying_token.get("symbol") or ""),
-            str(underlying_token.get("name") or ""),
-        ]
-    ).upper()
-    return any(keyword in check_text for keyword in SPCX_KEYWORDS)
+    underlying = str(details.get("underlying") or "").upper()
+    return any(keyword in underlying for keyword in SPCX_KEYWORDS)
 
 
 def should_notify_leverage_target(details):
