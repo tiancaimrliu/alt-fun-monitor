@@ -35,7 +35,7 @@ FACTORY_ADDRESS = Web3.to_checksum_address(
     os.getenv("FACTORY_ADDRESS", "0x65a379FE76C7AdC8037b3522De62B27c0D4e9259")
 )
 
-WATCH_UNDERLYING_KEYWORDS = ["ASTEROID", "SPCX"]
+WATCH_UNDERLYINGS = {"ASTEROID", "SPCX"}
 
 FACTORY_ABI = [
     {
@@ -334,8 +334,8 @@ def is_watch_underlying(details):
     if not details:
         return False
 
-    underlying = str(details.get("underlying") or "").upper()
-    return any(keyword in underlying for keyword in WATCH_UNDERLYING_KEYWORDS)
+    underlying = str(details.get("underlying") or "").strip().upper()
+    return underlying in WATCH_UNDERLYINGS
 
 
 def should_notify_leverage_target(details):
